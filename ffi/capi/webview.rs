@@ -357,6 +357,37 @@ pub unsafe extern "C" fn servo_webview_load(webview: *mut WebView, url: *const c
     }
 }
 
+/// Request that the `WebView`'s `RenderingContext` be resized. Note that the
+/// minimum size for a WebView is 1 pixel by 1 pixel so any requested size will be
+/// clamped by that value.
+///
+/// This will also resize any other `WebView` using the same `RenderingContext`. A
+/// `WebView` is always as big as its `RenderingContext`.
+///
+/// `webview` is a handle to a `WebView` object.
+/// The ownership of `webview` remains with the caller after the call.
+///
+/// # Safety
+///
+/// The caller must ensure that:
+///
+/// - `webview` is a non-null pointer to a `WebView` previously returned
+///   by `servo_webview_builder_build` and not yet passed to
+///   `servo_webview_free`. No other code may read or write `*webview`
+///   for the duration of this call.
+/// - The call is made from the same thread that originally created the
+///   `WebView` via `servo_webview_builder_build`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn servo_webview_resize(webview: *mut WebView, width: u32, height: u32) {
+    assert!(!webview.is_null(), "webview pointer must not be null");
+
+    // SAFETY: The caller is assumed to uphold the safety requirements
+    // for `webview` documented above.
+    let webview = unsafe { &*webview };
+
+    webview.resize(dpi::PhysicalSize::new(width, height));
+}
+
 /// Asynchronously takes a screenshot of the full `WebView` viewport.
 ///
 /// The provided `callback` will be invoked with either the image data
